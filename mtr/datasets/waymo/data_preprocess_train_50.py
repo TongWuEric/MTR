@@ -208,7 +208,7 @@ def process_waymo_data_with_scenario_proto(data_file, output_path=None):
     return ret_infos
 
 
-def get_infos_from_protos(data_path, output_path=None, num_workers=8, part='first'):
+def get_infos_from_protos(data_path, output_path=None, num_workers=8):
     from functools import partial
     if output_path is not None:
         os.makedirs(output_path, exist_ok=True)
@@ -221,14 +221,12 @@ def get_infos_from_protos(data_path, output_path=None, num_workers=8, part='firs
     src_files.sort()
 
     # Split files into two halves
-    half = len(src_files) // 2
-    if part == 'first':
-        src_files = src_files[:half]
-    elif part == 'second':
-        src_files = src_files[half:]
-    else:
-        raise ValueError("part argument must be 'first' or 'second'")
+    forth = len(src_files) // 4
 
+    src_files = src_files[forth:2*forth]
+
+
+    # func(src_files[0])
     with multiprocessing.Pool(num_workers) as p:
         data_infos = list(tqdm(p.imap(func, src_files), total=len(src_files)))
 
@@ -237,31 +235,16 @@ def get_infos_from_protos(data_path, output_path=None, num_workers=8, part='firs
 
 
 def create_infos_from_protos(raw_data_path, output_path, num_workers=16):
-    # Process first half
-    train_infos_first = get_infos_from_protos(
+    train_infos = get_infos_from_protos(
         data_path=os.path.join(raw_data_path, 'training'),
-        output_path=os.path.join(output_path, 'processed_scenarios_training_first_half'),
-        num_workers=num_workers,
-        part='first'
+        output_path=os.path.join(output_path, 'processed_scenarios_training'),
+        num_workers=num_workers
     )
-    print('----------------Waymo info train file (first half) get----------------')
-    train_filename_first = os.path.join(output_path, 'processed_scenarios_training_infos_first_half.pkl')
-    with open(train_filename_first, 'wb') as f:
-        pickle.dump(train_infos_first, f)
-    print('----------------Waymo info train file (first half) is saved to %s----------------' % train_filename_first)
-
-    # Process second half
-    train_infos_second = get_infos_from_protos(
-        data_path=os.path.join(raw_data_path, 'training'),
-        output_path=os.path.join(output_path, 'processed_scenarios_training_second_half'),
-        num_workers=num_workers,
-        part='second'
-    )
-    print('----------------Waymo info train file (second half) get----------------')
-    train_filename_second = os.path.join(output_path, 'processed_scenarios_training_infos_second_half.pkl')
-    with open(train_filename_second, 'wb') as f:
-        pickle.dump(train_infos_second, f)
-    print('----------------Waymo info train file (second half) is saved to %s----------------' % train_filename_second)
+    print('----------------Waymo info train file 2/4----------------')
+    train_filename = os.path.join(output_path, 'processed_scenarios_training_infos.pkl')
+    with open(train_filename, 'wb') as f:
+        pickle.dump(train_infos, f)
+    print('----------------Waymo info train file is saved to %s----------------' % train_filename)
     
 
 if __name__ == '__main__':
